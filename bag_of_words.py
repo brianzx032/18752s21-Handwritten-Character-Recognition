@@ -29,8 +29,6 @@ def extract_features(loader,n_cpu):
     for x, y in loader:
         img = np.moveaxis(x.numpy(),1,-1).reshape(y.size(0),32,32,3)
         visual_words.compute_response(g_opts,img,y, n_worker=n_cpu)
-    print("")
-    visual_words.compute_dictionary()
 
 def evaluate(loader,n_cpu):
     global g_opts
@@ -61,6 +59,7 @@ def main(cmd,opts):
     if "extract" in cmd:
         extract_features(trainloader,n_cpu)
     if "build" in cmd:
+        visual_words.compute_dictionary()
         visual_recog.build_recognition_system(g_opts,n_cpu)
     if "evaluate" in cmd:
         evaluate(testloader,n_cpu)
