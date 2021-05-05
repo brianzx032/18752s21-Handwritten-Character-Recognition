@@ -1,3 +1,7 @@
+'''
+Reference: 16720 Computer Vision S21 HW1
+'''
+
 import os
 import multiprocessing
 from os.path import join, isfile
@@ -7,7 +11,8 @@ import scipy.ndimage
 import skimage.color
 from PIL import Image
 from sklearn.cluster import KMeans
-from skimage.feature import hog
+import skimage.feature
+import cv2
 
 g_opts = None
 
@@ -23,50 +28,30 @@ def extract_filter_responses(opts, img):
     '''
 
     filter_scales = opts.filter_scales
-    # check input channels
-    if len(img.shape) == 2:
-        H, W = img.shape
-        img = skimage.color.gray2rgb(img)
-    else:
-        H, W, _ = img.shape
-
-    srcImg = skimage.color.rgb2lab(img)
-
-    filter_responses = np.zeros((H, W, 3*5*len(filter_scales)))
-
-    for scale in range(len(filter_scales)):
-        for ch in range(3):  # gaussian
-            scipy.ndimage.gaussian_filter(srcImg[:, :, ch],
-                                          filter_scales[scale],
-                                          output=filter_responses[:, :, 3*5*scale+ch])
-
-        for ch in range(3):  # laplace of gaussian
-            scipy.ndimage.gaussian_laplace(srcImg[:, :, ch],
-                                           filter_scales[scale],
-                                           output=filter_responses[:, :, 3*5*scale+ch+3])
-
-        for ch in range(3):  # hog
-            fd, hog_image = hog(srcImg[:, :, ch], orientations=8,
-                                pixels_per_cell=(
-                                    filter_scales[scale]*2, filter_scales[scale]*2),
-                                cells_per_block=(1, 1), visualize=True, multichannel=False)
-            filter_responses[:, :, 3*5*scale+ch+6] = hog_image
-
-        for ch in range(3):  # gaussian derivitive in x
-            scipy.ndimage.gaussian_filter(srcImg[:, :, ch],
-                                          filter_scales[scale], order=(0, 1),
-                                          output=filter_responses[:, :, 3*5*scale+ch+9])
-
-        for ch in range(3):  # gaussian derivitive in y
-            scipy.ndimage.gaussian_filter(srcImg[:, :, ch],
-                                          filter_scales[scale], order=(1, 0),
-                                          output=filter_responses[:, :, 3*5*scale+ch+12])
-
+    if len(img.shape) == 3:
+        img = skimage.color.rgb2gray(img)
+    filter_responses = None
+    result_img = skimage.feature.corner_fast(img, n=7, threshold=0.15)
+    locs = skimage.feature.corner_peaks(result_img, min_distance=1)
+    # sort
+    # ind = np.lexsort((locs[:,1],locs[:,0]))
+    # locs = locs[ind]
+    for i in range(20):
+        try:
+            patch = img[locs[i][0]-3:locs[i][0]+4, locs[i][1]-3:locs[i][1]+4]
+        except:
+            patch = np.zeros((7, 7))
+        fd, hog_pattern = skimage.feature.hog(patch, orientations=8,
+                                              pixels_per_cell=(2, 2),
+                                              cells_per_block=(1, 1), visualize=True, multichannel=False)
+        try:
+            filter_responses = np.dstack((filter_responses, hog_pattern))
+        except:
+            filter_responses = hog_pattern
     return filter_responses
 
 
 def compute_response_one_image(img):
-    # def compute_response_one_image(opts,img_file):
     '''
     Extracts a random subset of filter responses of an image and save it to
     disk. This is a worker function called by compute_dictionary.
@@ -82,7 +67,7 @@ def compute_response_one_image(img):
     sampled_resp = sing_img_resp.reshape((H*W, fr_num))[rnd_idx[:], :]
 
     # print("compute_response_one_image ({})".format(os.getpid()))
-    print('.',end='')
+    print('.', end='')
     return sampled_resp
 
 
@@ -132,6 +117,7 @@ def compute_dictionary():
     print("Kmeans clustering OK")
     np.save(join(feat_dir, 'bow_dictionary.npy'), dictionary)
 
+
 def get_visual_words_from_resp(opts, filter_responses, dictionary):
     word_map = np.zeros(filter_responses.shape[0:2])
 
@@ -142,6 +128,8 @@ def get_visual_words_from_resp(opts, filter_responses, dictionary):
     word_map = np.argmin(dist, axis=1).reshape(
         filter_responses.shape[0], filter_responses.shape[1])
     return word_map
+
+
 def get_visual_words(opts, img, dictionary):
     '''
     Compute visual words mapping for the given img using the dictionary of

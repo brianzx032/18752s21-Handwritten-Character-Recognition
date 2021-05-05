@@ -1,3 +1,6 @@
+'''
+Reference: 16720 Computer Vision S21 HW1
+'''
 import os
 import math
 import multiprocessing
@@ -136,14 +139,30 @@ def distance_to_set(word_hist, histograms):
     Compute distance between a histogram of visual words with all training
     image histograms.
     '''
-    return 1-np.sum(np.minimum(word_hist, histograms), axis=1)
+    # print(word_hist)
+    target = word_hist
+    target[np.argmax(target)] = 0
+    ref = histograms
+    ref[:,np.argmax(ref,axis=1)] = 0
+    
+    target = word_hist -np.max(word_hist)
+    ref = histograms -np.max(histograms,axis=1,keepdims=True)
+
+    # target = word_hist -np.sum(word_hist)/(word_hist.shape[0])
+    # ref = histograms -np.sum(histograms,axis=1,keepdims=True)/(histograms.shape[1])
+
+    sim = target* ref
+    # sim = np.minimum(word_hist, histograms)
+    # sim = np.minimum(-word_hist, -histograms)
+    dist = 1-np.sum(sim, axis=1)
+    # dist = np.linalg.norm(target-ref,axis = 1).sum()
+    return dist
 
 
 def predict(args):
     global g_opts, g_dictionary, g_features, g_trained_labels
     img_label, img = args
     img_feat = get_image_feature(np.array(img))
-    print(img[16][16])
     dist = distance_to_set(img_feat, g_features)
     predict_label = g_trained_labels[np.argmin(dist)]
     # print("predict ({})".format(os.getpid()))

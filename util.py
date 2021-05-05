@@ -1,3 +1,6 @@
+'''
+Reference: 16720 Computer Vision S21 HW1
+'''
 import numpy as np
 import matplotlib.pyplot as plt
 import multiprocessing
