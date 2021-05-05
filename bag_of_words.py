@@ -59,7 +59,7 @@ def main():
     trainloader = DataLoader(trainset, batch_size=batch_size, shuffle=True)
     testloader = DataLoader(testset, batch_size=batch_size, shuffle=False)
     n_cpu = util.get_num_CPU()
-    # extract_features(trainloader,n_cpu)
+    extract_features(trainloader,n_cpu)
     visual_recog.build_recognition_system(opts,n_cpu)
     evaluate(testloader,n_cpu)
 

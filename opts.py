@@ -16,7 +16,7 @@ def get_opts():
                         help='data folder')
     parser.add_argument('--feat-dir', type=str, default='./feat',
                         help='feature folder')
-    parser.add_argument('--out-dir', type=str, default='.',
+    parser.add_argument('--out-dir', type=str, default='./output',
                         help='output folder')
 
     # Visual words (requires tuning)
