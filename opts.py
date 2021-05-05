@@ -25,10 +25,11 @@ def get_opts():
                         help='a list of scales for all the filters')
     parser.add_argument('--K', type=int, default=10,
                         help='# of words')
-    parser.add_argument(
-        '--alpha', type=int, default=32*32,
-        help='Using only a subset of alpha pixels in each image'
-    )
+    parser.add_argument('--alpha', type=int, default=20,
+                        help='# of patterns')
+
+    parser.add_argument('--lr', type=int, default=1e-4,
+                        help='learning rate')
 
     # Recognition system (requires tuning)
     parser.add_argument('--L', type=int, default=3,

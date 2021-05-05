@@ -181,10 +181,10 @@ trainset, validset, testset = torch.utils.data.random_split(
 
 best_param = np.zeros(4)
 best_val_acc = 0
-for bs in [400]:
-    for lr in np.arange(1e-5, 1e-3, 5e-5):
+for bs in [1500]:
+    for lr in np.arange(5e-5, 1e-3, 5e-5):
         for e in [100]:
-            for w in np.arange(1e-5, 1e-3, 5e-5):
+            for w in np.arange(5e-5, 1e-3, 5e-5):
                 valid_acc = train_model(
                     logreg, trainset, validset, bs, lr, e, w)
                 if valid_acc > best_val_acc:
@@ -193,7 +193,7 @@ print(best_param)
 confusion = test_model(logreg,testset,best_param)
 accuracy = np.sum(confusion.diagonal()) / np.sum(confusion)
 print(accuracy)
-plt.imshow(confusion_matrix,interpolation='nearest')
+plt.imshow(confusion,interpolation='nearest')
 plt.grid(True)
 plt.xticks(np.arange(36),''.join([str(_) for _ in range(10)])+string.ascii_uppercase[:26])
 plt.yticks(np.arange(36),''.join([str(_) for _ in range(10)])+string.ascii_uppercase[:26])

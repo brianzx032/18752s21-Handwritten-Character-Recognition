@@ -36,7 +36,7 @@ def extract_filter_responses(opts, img):
     # sort
     # ind = np.lexsort((locs[:,1],locs[:,0]))
     # locs = locs[ind]
-    for i in range(20):
+    for i in range(opts.alpha):
         try:
             patch = img[locs[i][0]-3:locs[i][0]+4, locs[i][1]-3:locs[i][1]+4]
         except:
@@ -61,10 +61,8 @@ def compute_response_one_image(img):
     img = np.array(img)
     sing_img_resp = extract_filter_responses(g_opts, img)
 
-    # random pick alpha pixels
     [H, W, fr_num] = sing_img_resp.shape
-    rnd_idx = np.random.choice(H*W, g_opts.alpha)
-    sampled_resp = sing_img_resp.reshape((H*W, fr_num))[rnd_idx[:], :]
+    sampled_resp = sing_img_resp.reshape((H*W, fr_num))
 
     # print("compute_response_one_image ({})".format(os.getpid()))
     print('.', end='')
