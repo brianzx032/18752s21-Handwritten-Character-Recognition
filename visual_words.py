@@ -30,7 +30,7 @@ def extract_filter_responses(opts, img):
     if len(img.shape) == 3:
         img = skimage.color.rgb2gray(img)
     filter_responses = None
-    result_img = skimage.feature.corner_fast(img, n=opts.pattern_size, threshold=opts.hog_threshold)
+    result_img = skimage.feature.corner_fast(img, n=opts.pattern_size, threshold=opts.hog_thres)
     locs = skimage.feature.corner_peaks(result_img, min_distance=1)
     # sort
     ind = np.lexsort((locs[:,1],locs[:,0]))

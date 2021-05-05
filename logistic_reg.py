@@ -117,12 +117,12 @@ def train_model(model, trainset, validset, param):
 
 
 def test_model(model, testset, param):
-    batch_size, learning_rate, epoch_num, weight_decay, _, _ = param
+    batch_size, learning_rate, epoch_num, weight_decay, alpha, pattern_sz, threshold = param
     # get device
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     param_str = model.feat_name + \
-        '_b{}lr{:.1}w{:.1}e{}_test'.format(
-            batch_size, learning_rate, weight_decay, epoch_num)
+        '_lr{:.1}w{:.1}a{}ps{}thrs{:.2}'.format(
+            learning_rate, weight_decay, alpha, pattern_sz, threshold)
     print(param_str, ':', device)
 
     # dataloader
@@ -176,7 +176,7 @@ best_val_acc = 0
 for alpha in range(5, 15, 3):
     opts.alpha = alpha
     for threshold in np.arange(0.05, 0.2, 0.03):
-        opts.threshold = threshold
+        opts.thres = threshold
         for pattern_size in range(7, 13, 1):
             opts.pattern_size = pattern_size
 
