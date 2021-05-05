@@ -22,7 +22,7 @@ opts = get_opts()
 
 
 def train_model(model, trainset, validset, param):
-    batch_size, learning_rate, epoch_num, weight_decay, alpha, pattern_sz, threshold = param
+    batch_size, learning_rate, epoch_num, weight_decay, alpha, pattern_sz, threshold, n = param
 
     def run_epoch(dataloader, batch_num, no_grad):
         total_loss = 0.0
@@ -43,8 +43,8 @@ def train_model(model, trainset, validset, param):
     # get device
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     param_str = model.feat_name + \
-        '_lr{:.2}w{:.2}a{}ps{}thrs{:.2}'.format(
-            learning_rate, weight_decay, alpha, pattern_sz, threshold)
+        '_lr{:.2}w{:.2}a{}ps{}n{}thrs{:.2}'.format(
+            learning_rate, weight_decay, alpha, pattern_sz, n, threshold)
     print(param_str, ':', device)
 
     # dataloader
@@ -117,12 +117,12 @@ def train_model(model, trainset, validset, param):
 
 
 def test_model(model, testset, param):
-    batch_size, learning_rate, epoch_num, weight_decay, alpha, pattern_sz, threshold = param
+    batch_size, learning_rate, epoch_num, weight_decay, alpha, pattern_sz, threshold, n = param
     # get device
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     param_str = model.feat_name + \
-        '_lr{:.2}w{:.2}a{}ps{}thrs{:.2}'.format(
-            learning_rate, weight_decay, alpha, pattern_sz, threshold)
+        '_lr{:.2}w{:.2}a{}ps{}n{}thrs{:.2}'.format(
+            learning_rate, weight_decay, alpha, pattern_sz, n, threshold)
     print(param_str, ':', device)
 
     # dataloader
@@ -164,74 +164,80 @@ class LR(nn.Module):
         x = self.fc1(x)
         return x
 
+
+def tuning():
+    best_param = [0 for i in range(8)]
+    best_val_acc = 0
+    best_model = None
+    testset_for_best = None
+    for alpha in range(7, 21, 2):
+        opts.alpha = alpha
+        for pattern_size in range(7, 13, 2):
+            opts.pattern_size = pattern_size
+            for threshold in np.arange(0.01, 0.17, 0.03):
+                opts.thres = threshold
+                for n in range(7, 17, 2):
+                    opts.hog_n = n
+
+                    bag_of_words.main(["extract"], opts)
+
+                    npz_data = np.load(join(opts.feat_dir, 'bow_feature.npz'))
+                    logreg = LR("hog_corner", opts.pattern_size *
+                                opts.pattern_size*opts.alpha, 36)
+                    dataset = TensorDataset(torch.from_numpy(npz_data["features"].astype(np.float32)),
+                                            torch.from_numpy(npz_data["labels"]))
+                    valid_num = len(dataset)//3
+                    test_num = valid_num
+                    train_num = len(dataset)-valid_num-test_num
+                    trainset, validset, testset = torch.utils.data.random_split(
+                        dataset, [train_num, valid_num, test_num])
+
+                    for lr in np.arange(1.5e-3, 2e-3, 5e-4):
+                        for w in np.arange(1.5e-3, 2e-3, 5e-4):
+                            valid_acc = train_model(logreg, trainset, validset, [
+                                                    opts.batch_size, lr, opts.epoch, w, alpha, pattern_size, threshold, n])
+                            if valid_acc > best_val_acc:
+                                best_param = [opts.batch_size, lr, opts.epoch,
+                                              w, alpha, pattern_size, threshold, n]
+                                best_val_acc = valid_acc
+                                best_model = logreg
+                                testset_for_best = testset
+                    print("current best:", best_param,
+                          "acc:", float(best_val_acc))
+    print(best_param)
+    confusion = test_model(best_model, testset_for_best, best_param)
+    accuracy = np.sum(confusion.diagonal()) / np.sum(confusion)
+    print("valid_acc:{:.3f}; test_acc:{:.3f}".format(best_val_acc, accuracy))
+    return confusion, best_param
+
+
+
+'''hog'''
+confusion, best_param = tuning()
+util.visualize_confusion_matrix(confusion)
+_, _, _, _, opts.alpha, opts.pattern_size, opts.hog_thres, opts.hog_n = best_param
+best_param[2] = 100
+bag_of_words.main(["extract"], opts)
+npz_data = np.load(join(opts.feat_dir, 'bow_feature.npz'))
+logreg = LR("best_hog_corner", opts.pattern_size *
+            opts.pattern_size*opts.alpha, 36)
+
+# best_param = [opts.batch_size, opts.lr, opts.epoch,
+#               opts.weight_decay, opts.alpha, opts.pattern_size, opts.hog_thres, opts.hog_n]
 # npz_data = np.load(join(opts.feat_dir, 'zm.npz'))
 # logreg = LR('logistic-regression', 25, 36)
 
 # npz_data = np.load(join(opts.feat_dir, 'hog.npz'))
 # logreg = LR('logistic-regression', 64*64*3, 36)
 
-
-def tuning():
-    best_param = [0 for i in range(7)]
-    best_val_acc = 0
-    best_model = None
-    testset_for_best = None
-    for alpha in range(10, 17, 1):
-        opts.alpha = alpha
-        for threshold in np.arange(0.05, 0.21, 0.05):
-            opts.thres = threshold
-            for pattern_size in range(7, 13, 1):
-                opts.pattern_size = pattern_size
-
-                bag_of_words.main(["extract"], opts)
-
-                npz_data = np.load(join(opts.feat_dir, 'bow_feature.npz'))
-                logreg = LR("hog_corner", opts.pattern_size *
-                            opts.pattern_size*opts.alpha, 36)
-                dataset = TensorDataset(torch.from_numpy(npz_data["features"].astype(np.float32)),
-                                        torch.from_numpy(npz_data["labels"]))
-                valid_num = len(dataset)//5
-                test_num = valid_num
-                train_num = len(dataset)-valid_num-test_num
-                trainset, validset, testset = torch.utils.data.random_split(
-                    dataset, [train_num, valid_num, test_num])
-
-                for lr in np.arange(1.2e-3, 2e-3, 2e-4):
-                    for w in np.arange(1.2e-3, 2e-3, 2e-4):
-                        valid_acc = train_model(logreg, trainset, validset, [
-                                                opts.batch_size, lr, opts.epoch, w, alpha, pattern_size, threshold])
-                        if valid_acc > best_val_acc:
-                            best_param = [opts.batch_size, lr, opts.epoch,
-                                          w, alpha, pattern_size, threshold]
-                            best_val_acc = valid_acc
-                            best_model = logreg
-                            testset_for_best = testset
-                print("current best:",best_param,"acc:",float(best_val_acc))
-    print(best_param)
-    confusion = test_model(best_model, testset_for_best, best_param)
-    accuracy = np.sum(confusion.diagonal()) / np.sum(confusion)
-    print("valid_acc:{:.3f}; test_acc:{:.3f}", best_val_acc, accuracy)
-    return confusion, best_param
-
-
-confusion, best_param = tuning()
-util.visualize_confusion_matrix(confusion)
-
-
-_, _, _, _, opts.alpha, opts.pattern_size, opts.hog_thres = best_param
-bag_of_words.main(["extract"], opts)
-npz_data = np.load(join(opts.feat_dir, 'bow_feature.npz'))
-logreg = LR("best_hog_corner", opts.pattern_size *
-            opts.pattern_size*opts.alpha, 36)
 dataset = TensorDataset(torch.from_numpy(npz_data["features"].astype(np.float32)),
                         torch.from_numpy(npz_data["labels"]))
 test_num = len(dataset)//5
 train_num = len(dataset)-test_num
 trainset, testset = torch.utils.data.random_split(
     dataset, [train_num, test_num])
-best_param[2] = 100
 train_model(logreg, trainset, testset, best_param)
 confusion = test_model(logreg, testset, best_param)
 accuracy = np.sum(confusion.diagonal()) / np.sum(confusion)
-print("test_acc:{:.3f}", accuracy)
+print("test_acc:{:.3f}".format(accuracy))
 util.visualize_confusion_matrix(confusion)

@@ -30,8 +30,9 @@ def extract_filter_responses(opts, img):
     if len(img.shape) == 3:
         img = skimage.color.rgb2gray(img)
     filter_responses = None
-    result_img = skimage.feature.corner_fast(img, n=opts.pattern_size, threshold=opts.hog_thres)
+    result_img = skimage.feature.corner_fast(img, n=opts.hog_n, threshold=opts.hog_thres)
     locs = skimage.feature.corner_peaks(result_img, min_distance=1)
+    H,W = result_img.shape[0],result_img.shape[1]
     # sort
     ind = np.lexsort((locs[:,1],locs[:,0]))
     locs = locs[ind]
@@ -39,7 +40,7 @@ def extract_filter_responses(opts, img):
     n = opts.pattern_size - m
     for i in range(opts.alpha):
         try:
-            n = np.min([32 - locs[i,0],32 - locs[i,1],n])
+            n = np.min([H - locs[i,0],W - locs[i,1],n])
             m = opts.pattern_size - n
             patch = img[locs[i][0]-m:locs[i][0]+n, locs[i][1]-m:locs[i][1]+n]
             fd, hog_pattern = skimage.feature.hog(patch, orientations=8,

@@ -28,7 +28,7 @@ transform = transforms.Compose([
 def main():
     dataset = torchvision.datasets.ImageFolder(
         "./data/classified/", transform=transform)
-    dataloader = DataLoader(dataset, batch_size=1, shuffle=True)
+    dataloader = DataLoader(dataset, batch_size=1, shuffle=False)
     features = None
     for x, y in dataloader:
         img = np.moveaxis(x.numpy(), 1, -1).reshape(64, 64, 3)

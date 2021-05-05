@@ -22,6 +22,8 @@ def get_opts():
     # Visual words (requires tuning)
     parser.add_argument('--pattern-size', type=int, default=7,
                         help='size of pattern')
+    parser.add_argument('--hog-n', type=int, default=7,
+                        help='n for hog')
     parser.add_argument('--alpha', type=int, default=20,
                         help='# of patterns')
     parser.add_argument('--hog-thres', type=int, default=0.15,
