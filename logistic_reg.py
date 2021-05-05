@@ -94,7 +94,7 @@ def train_model(model, trainset, validset, batch_size, learning_rate, epoch_num,
 
     print('Finished Training')
 
-    PATH = './'+param_str+'.pth'
+    PATH = join(opts.out_dir,param_str+'.pth')
     torch.save(model.state_dict(), PATH)
 
     fig, (ax1, ax2) = plt.subplots(1, 2)
@@ -109,7 +109,7 @@ def train_model(model, trainset, validset, batch_size, learning_rate, epoch_num,
     ax2.set_xlabel('Iteration')
     ax2.set_ylabel('Loss')
     ax2.legend(['train', 'valid'])
-    plt.savefig('./'+param_str+'.png')
+    plt.savefig(join(opts.out_dir,param_str+'.png'))
     # plt.show()
     return valid_acc
 
