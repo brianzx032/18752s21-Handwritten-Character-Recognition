@@ -43,7 +43,7 @@ def train_model(model, trainset, validset, param):
     # get device
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     param_str = model.feat_name + \
-        '_lr{:.1}w{:.1}a{}ps{}thrs{:.2}'.format(
+        '_lr{:.2}w{:.2}a{}ps{}thrs{:.2}'.format(
             learning_rate, weight_decay, alpha, pattern_sz, threshold)
     print(param_str, ':', device)
 
@@ -121,7 +121,7 @@ def test_model(model, testset, param):
     # get device
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     param_str = model.feat_name + \
-        '_lr{:.1}w{:.1}a{}ps{}thrs{:.2}'.format(
+        '_lr{:.2}w{:.2}a{}ps{}thrs{:.2}'.format(
             learning_rate, weight_decay, alpha, pattern_sz, threshold)
     print(param_str, ':', device)
 
@@ -171,38 +171,66 @@ class LR(nn.Module):
 # logreg = LR('logistic-regression', 64*64*3, 36)
 
 
-best_param = [0 for i in range(7)]
-best_val_acc = 0
-for alpha in range(5, 15, 3):
-    opts.alpha = alpha
-    for threshold in np.arange(0.05, 0.2, 0.03):
-        opts.thres = threshold
-        for pattern_size in range(7, 13, 1):
-            opts.pattern_size = pattern_size
+def tuning():
+    best_param = [0 for i in range(7)]
+    best_val_acc = 0
+    best_model = None
+    testset_for_best = None
+    for alpha in range(10, 17, 2):
+        opts.alpha = alpha
+        for threshold in np.arange(0.05, 0.2, 0.03):
+            opts.thres = threshold
+            for pattern_size in range(9, 13, 1):
+                opts.pattern_size = pattern_size
 
-            bag_of_words.main(["extract"], opts)
+                bag_of_words.main(["extract"], opts)
 
-            npz_data = np.load(join(opts.feat_dir, 'bow_feature.npz'))
-            logreg = LR("hog_corner", opts.pattern_size *
-                        opts.pattern_size*opts.alpha, 36)
-            dataset = TensorDataset(torch.from_numpy(npz_data["features"].astype(np.float32)),
-                                    torch.from_numpy(npz_data["labels"]))
-            valid_num = len(dataset)//5
-            test_num = valid_num
-            train_num = len(dataset)-valid_num-valid_num
-            trainset, validset, testset = torch.utils.data.random_split(
-                dataset, [train_num, valid_num, test_num])
+                npz_data = np.load(join(opts.feat_dir, 'bow_feature.npz'))
+                logreg = LR("hog_corner", opts.pattern_size *
+                            opts.pattern_size*opts.alpha, 36)
+                dataset = TensorDataset(torch.from_numpy(npz_data["features"].astype(np.float32)),
+                                        torch.from_numpy(npz_data["labels"]))
+                valid_num = len(dataset)//5
+                test_num = valid_num
+                train_num = len(dataset)-valid_num-test_num
+                trainset, validset, testset = torch.utils.data.random_split(
+                    dataset, [train_num, valid_num, test_num])
 
-            for lr in np.arange(1e-3, 1.5e-3, 2e-4):
-                for w in np.arange(1e-3, 1.5e-3, 2e-4):
-                    valid_acc = train_model(logreg, trainset, validset, [
-                                            opts.batch_size, lr, opts.epoch, w, alpha, pattern_size, threshold])
-                    if valid_acc > best_val_acc:
-                        best_param = [opts.batch_size, lr, opts.epoch,
-                                      w, alpha, pattern_size, threshold]
-                        best_val_acc = valid_acc
-print(best_param)
+                for lr in np.arange(1.2e-3, 2e-3, 2e-4):
+                    for w in np.arange(1.2e-3, 2e-3, 2e-4):
+                        valid_acc = train_model(logreg, trainset, validset, [
+                                                opts.batch_size, lr, opts.epoch, w, alpha, pattern_size, threshold])
+                        if valid_acc > best_val_acc:
+                            best_param = [opts.batch_size, lr, opts.epoch,
+                                          w, alpha, pattern_size, threshold]
+                            best_val_acc = valid_acc
+                            best_model = logreg
+                            testset_for_best = testset
+    print(best_param)
+    confusion = test_model(best_model, testset_for_best, best_param)
+    accuracy = np.sum(confusion.diagonal()) / np.sum(confusion)
+    print("valid_acc:{:.3f}; test_acc:{:.3f}", best_val_acc, accuracy)
+    return confusion, best_param
+
+
+confusion, best_param = tuning()
+util.visualize_confusion_matrix(confusion)
+
+
+_, _, _, _, opts.alpha, opts.pattern_size, opts.hog_thres = best_param
+bag_of_words.main(["extract"], opts)
+npz_data = np.load(join(opts.feat_dir, 'bow_feature.npz'))
+logreg = LR("best_hog_corner", opts.pattern_size *
+            opts.pattern_size*opts.alpha, 36)
+dataset = TensorDataset(torch.from_numpy(npz_data["features"].astype(np.float32)),
+                        torch.from_numpy(npz_data["labels"]))
+test_num = len(dataset)//5
+train_num = len(dataset)-test_num
+trainset, testset = torch.utils.data.random_split(
+    dataset, [train_num, test_num])
+best_param[2] = 100
+train_model(logreg, trainset, testset, best_param)
 confusion = test_model(logreg, testset, best_param)
 accuracy = np.sum(confusion.diagonal()) / np.sum(confusion)
-print(accuracy)
+print("test_acc:{:.3f}", accuracy)
 util.visualize_confusion_matrix(confusion)
