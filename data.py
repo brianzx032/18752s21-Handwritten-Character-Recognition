@@ -11,7 +11,7 @@ import torchvision
 
 
 def get_data_loader():
-    path = "../cleaned_data/"
+    path = "./data/classified/"
 
     transform = transforms.Compose([
         transforms.Resize((64, 64)),

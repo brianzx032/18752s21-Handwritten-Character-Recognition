@@ -24,7 +24,7 @@ SEED = 11785
 np.random.seed(SEED)
 torch.manual_seed(SEED)
 
-os.environ["CUDA_VISIBLE_DEVICES"] = "1"  # GPU ID
+os.environ["CUDA_VISIBLE_DEVICES"] = "0"  # GPU ID
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 
