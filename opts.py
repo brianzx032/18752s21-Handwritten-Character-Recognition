@@ -20,22 +20,28 @@ def get_opts():
                         help='output folder')
 
     # Visual words (requires tuning)
-    parser.add_argument('--filter-scales', nargs='+', type=float,
-                        default=[1, 2, 4],
-                        help='a list of scales for all the filters')
-    parser.add_argument('--K', type=int, default=10,
-                        help='# of words')
+    parser.add_argument('--pattern-size', type=int, default=7,
+                        help='size of pattern')
     parser.add_argument('--alpha', type=int, default=20,
                         help='# of patterns')
-
-    parser.add_argument('--lr', type=int, default=1e-4,
-                        help='learning rate')
+    parser.add_argument('--hog-thres', type=int, default=0.15,
+                        help='threshold for hog')
+    parser.add_argument('--K', type=int, default=10,
+                        help='# of words')
 
     # Recognition system (requires tuning)
     parser.add_argument('--L', type=int, default=3,
                         help='# of layers in spatial pyramid matching (SPM)')
 
-    # Additional options (add your own hyperparameters here)
+    # logistic regression
+    parser.add_argument('--batch-size', type=int, default=1500,
+                        help='batch size')
+    parser.add_argument('--epoch', type=int, default=20,
+                        help='# of epoches')
+    parser.add_argument('--lr', type=float, default=1e-4,
+                        help='learning rate')
+    parser.add_argument('--weight-decay', type=float, default=1e-5,
+                        help='weight decay')
 
     ##
     opts = parser.parse_args()

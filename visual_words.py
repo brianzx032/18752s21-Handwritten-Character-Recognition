@@ -27,27 +27,33 @@ def extract_filter_responses(opts, img):
     Extracts the filter responses for the given image.
     '''
 
-    filter_scales = opts.filter_scales
     if len(img.shape) == 3:
         img = skimage.color.rgb2gray(img)
     filter_responses = None
-    result_img = skimage.feature.corner_fast(img, n=7, threshold=0.15)
+    result_img = skimage.feature.corner_fast(img, n=opts.pattern_size, threshold=opts.hog_threshold)
     locs = skimage.feature.corner_peaks(result_img, min_distance=1)
     # sort
-    # ind = np.lexsort((locs[:,1],locs[:,0]))
-    # locs = locs[ind]
+    ind = np.lexsort((locs[:,1],locs[:,0]))
+    locs = locs[ind]
+    m = opts.pattern_size//2
+    n = opts.pattern_size - m
     for i in range(opts.alpha):
         try:
-            patch = img[locs[i][0]-3:locs[i][0]+4, locs[i][1]-3:locs[i][1]+4]
+            n = np.min([32 - locs[i,0],32 - locs[i,1],n])
+            m = opts.pattern_size - n
+            patch = img[locs[i][0]-m:locs[i][0]+n, locs[i][1]-m:locs[i][1]+n]
+            fd, hog_pattern = skimage.feature.hog(patch, orientations=8,
+                                                pixels_per_cell=(2, 2),
+                                                cells_per_block=(1, 1), visualize=True, multichannel=False)
         except:
-            patch = np.zeros((7, 7))
-        fd, hog_pattern = skimage.feature.hog(patch, orientations=8,
-                                              pixels_per_cell=(2, 2),
-                                              cells_per_block=(1, 1), visualize=True, multichannel=False)
+            hog_pattern = np.zeros((opts.pattern_size, opts.pattern_size))
+
         try:
             filter_responses = np.dstack((filter_responses, hog_pattern))
         except:
             filter_responses = hog_pattern
+    # cv2.imshow("p",filter_responses[...,0])
+    # cv2.waitKey()
     return filter_responses
 
 

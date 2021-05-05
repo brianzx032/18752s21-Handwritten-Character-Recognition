@@ -1,9 +1,11 @@
 '''
 Reference: 16720 Computer Vision S21 HW1
 '''
-import numpy as np
-import matplotlib.pyplot as plt
 import multiprocessing
+import string
+
+import matplotlib.pyplot as plt
+import numpy as np
 
 
 def get_num_CPU():
@@ -73,3 +75,10 @@ def visualize_wordmap(original_image, wordmap, out_path=None):
     plt.show()
     if out_path:
         plt.savefig(out_path, pad_inches=0)
+
+def visualize_confusion_matrix(confusion_matrix):
+    plt.imshow(confusion_matrix,interpolation='nearest')
+    plt.grid(True)
+    plt.xticks(np.arange(36),''.join([str(_) for _ in range(10)])+string.ascii_uppercase[:26])
+    plt.yticks(np.arange(36),''.join([str(_) for _ in range(10)])+string.ascii_uppercase[:26])
+    plt.show()

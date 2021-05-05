@@ -140,19 +140,19 @@ def distance_to_set(word_hist, histograms):
     image histograms.
     '''
     # print(word_hist)
-    target = word_hist
-    target[np.argmax(target)] = 0
-    ref = histograms
-    ref[:,np.argmax(ref,axis=1)] = 0
+    # target = word_hist
+    # target[np.argmax(target)] = 0
+    # ref = histograms
+    # ref[:,np.argmax(ref,axis=1)] = 0
     
-    target = word_hist -np.max(word_hist)
-    ref = histograms -np.max(histograms,axis=1,keepdims=True)
+    # target = word_hist -np.max(word_hist)
+    # ref = histograms -np.max(histograms,axis=1,keepdims=True)
 
     # target = word_hist -np.sum(word_hist)/(word_hist.shape[0])
     # ref = histograms -np.sum(histograms,axis=1,keepdims=True)/(histograms.shape[1])
 
-    sim = target* ref
-    # sim = np.minimum(word_hist, histograms)
+    # sim = target* ref
+    sim = np.minimum(word_hist, histograms)
     # sim = np.minimum(-word_hist, -histograms)
     dist = 1-np.sum(sim, axis=1)
     # dist = np.linalg.norm(target-ref,axis = 1).sum()

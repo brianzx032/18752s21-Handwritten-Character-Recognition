@@ -16,10 +16,14 @@ from skimage.transform import resize
 from torch.utils.data import DataLoader, TensorDataset
 from opts import get_opts
 import string
+import util
+import bag_of_words
 opts = get_opts()
 
 
-def train_model(model, trainset, validset, batch_size, learning_rate, epoch_num, weight_decay):
+def train_model(model, trainset, validset, param):
+    batch_size, learning_rate, epoch_num, weight_decay, alpha, pattern_sz, threshold = param
+
     def run_epoch(dataloader, batch_num, no_grad):
         total_loss = 0.0
         total_acc = 0.0
@@ -39,24 +43,21 @@ def train_model(model, trainset, validset, batch_size, learning_rate, epoch_num,
     # get device
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     param_str = model.feat_name + \
-        '_b{}lr{:.1}w{:.1}e{}'.format(
-            batch_size, learning_rate, weight_decay, epoch_num)
+        '_lr{:.1}w{:.1}a{}ps{}thrs{:.2}'.format(
+            learning_rate, weight_decay, alpha, pattern_sz, threshold)
     print(param_str, ':', device)
 
     # dataloader
     trainloader = DataLoader(trainset,
                              batch_size=batch_size,
-                             #  num_workers=2,
                              shuffle=True)
     validloader = DataLoader(validset,
                              batch_size=batch_size,
-                             # num_workers=2,
                              shuffle=False)
     # batch num
     train_batch_num = np.ceil(len(trainset)/batch_size)
     valid_batch_num = np.ceil(len(validset)/batch_size)
 
-    # optimizer = optim.SGD(model.parameters(), lr=learning_rate*5, weight_decay=1e-5)
     optimizer = optim.Adam(
         model.parameters(), lr=learning_rate, weight_decay=weight_decay)
 
@@ -94,7 +95,7 @@ def train_model(model, trainset, validset, batch_size, learning_rate, epoch_num,
 
     print('Finished Training')
 
-    PATH = join(opts.out_dir,param_str+'.pth')
+    PATH = join(opts.out_dir, param_str+'.pth')
     torch.save(model.state_dict(), PATH)
 
     fig, (ax1, ax2) = plt.subplots(1, 2)
@@ -109,13 +110,14 @@ def train_model(model, trainset, validset, batch_size, learning_rate, epoch_num,
     ax2.set_xlabel('Iteration')
     ax2.set_ylabel('Loss')
     ax2.legend(['train', 'valid'])
-    plt.savefig(join(opts.out_dir,param_str+'.png'))
+    plt.savefig(join(opts.out_dir, param_str+'.png'))
     # plt.show()
+    plt.close()
     return valid_acc
 
 
 def test_model(model, testset, param):
-    batch_size, learning_rate, epoch_num, weight_decay = param
+    batch_size, learning_rate, epoch_num, weight_decay, _, _ = param
     # get device
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     param_str = model.feat_name + \
@@ -135,13 +137,13 @@ def test_model(model, testset, param):
     model.to(device)
     sm.to(device)
 
-    confusion = np.zeros((36,36))
+    confusion = np.zeros((36, 36))
     with torch.no_grad():
         for x, y in testloader:
             x, y = x.to(device), y.to(device)
             y_pred = torch.argmax(sm(model(x)), dim=1)
-            for t,p in zip(y,y_pred):
-                confusion[t,p] += 1
+            for t, p in zip(y, y_pred):
+                confusion[t, p] += 1
 
     # plt.show()
     return confusion
@@ -168,33 +170,39 @@ class LR(nn.Module):
 # npz_data = np.load(join(opts.feat_dir, 'hog.npz'))
 # logreg = LR('logistic-regression', 64*64*3, 36)
 
-npz_data = np.load(join(opts.feat_dir, 'bow_feature.npz'))
-logreg = LR("bow", 32*32*20, 36)
 
-dataset = TensorDataset(torch.from_numpy(npz_data["features"].astype(np.float32)),
-                        torch.from_numpy(npz_data["labels"]))
-valid_num = len(dataset)//5
-test_num = valid_num
-train_num = len(dataset)-valid_num-valid_num
-trainset, validset, testset = torch.utils.data.random_split(
-    dataset, [train_num, valid_num, test_num])
-
-best_param = np.zeros(4)
+best_param = [0 for i in range(7)]
 best_val_acc = 0
-for bs in [1500]:
-    for lr in np.arange(5e-5, 1e-3, 5e-5):
-        for e in [100]:
-            for w in np.arange(5e-5, 1e-3, 5e-5):
-                valid_acc = train_model(
-                    logreg, trainset, validset, bs, lr, e, w)
-                if valid_acc > best_val_acc:
-                    best_param = np.array([bs, lr, e, w])
+for alpha in range(5, 15, 3):
+    opts.alpha = alpha
+    for threshold in np.arange(0.05, 0.2, 0.03):
+        opts.threshold = threshold
+        for pattern_size in range(7, 13, 1):
+            opts.pattern_size = pattern_size
+
+            bag_of_words.main(["extract"], opts)
+
+            npz_data = np.load(join(opts.feat_dir, 'bow_feature.npz'))
+            logreg = LR("hog_corner", opts.pattern_size *
+                        opts.pattern_size*opts.alpha, 36)
+            dataset = TensorDataset(torch.from_numpy(npz_data["features"].astype(np.float32)),
+                                    torch.from_numpy(npz_data["labels"]))
+            valid_num = len(dataset)//5
+            test_num = valid_num
+            train_num = len(dataset)-valid_num-valid_num
+            trainset, validset, testset = torch.utils.data.random_split(
+                dataset, [train_num, valid_num, test_num])
+
+            for lr in np.arange(1e-3, 1.5e-3, 2e-4):
+                for w in np.arange(1e-3, 1.5e-3, 2e-4):
+                    valid_acc = train_model(logreg, trainset, validset, [
+                                            opts.batch_size, lr, opts.epoch, w, alpha, pattern_size, threshold])
+                    if valid_acc > best_val_acc:
+                        best_param = [opts.batch_size, lr, opts.epoch,
+                                      w, alpha, pattern_size, threshold]
+                        best_val_acc = valid_acc
 print(best_param)
-confusion = test_model(logreg,testset,best_param)
+confusion = test_model(logreg, testset, best_param)
 accuracy = np.sum(confusion.diagonal()) / np.sum(confusion)
 print(accuracy)
-plt.imshow(confusion,interpolation='nearest')
-plt.grid(True)
-plt.xticks(np.arange(36),''.join([str(_) for _ in range(10)])+string.ascii_uppercase[:26])
-plt.yticks(np.arange(36),''.join([str(_) for _ in range(10)])+string.ascii_uppercase[:26])
-plt.show()
+util.visualize_confusion_matrix(confusion)
