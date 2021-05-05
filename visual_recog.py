@@ -92,8 +92,9 @@ def get_image_feature(img):
     return get_feature_from_wordmap_SPM(g_opts, wordmap)
 
 def get_feat_from_resp(resp):
+    global g_opts
     # print("get_feat_from_resp ({})".format(os.getpid()))
-    resp = resp.reshape(32,32,-1)
+    resp = resp.reshape(g_opts.pattern_size,g_opts.pattern_size,-1)
     wordmap = visual_words.get_visual_words_from_resp(g_opts, resp, g_dictionary)
     print('.',end='')
     return get_feature_from_wordmap_SPM(g_opts, wordmap)

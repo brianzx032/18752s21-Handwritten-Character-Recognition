@@ -176,9 +176,9 @@ def tuning():
     best_val_acc = 0
     best_model = None
     testset_for_best = None
-    for alpha in range(10, 17, 2):
+    for alpha in range(12, 15, 2):
         opts.alpha = alpha
-        for threshold in np.arange(0.05, 0.2, 0.03):
+        for threshold in np.arange(0.05, 0.21, 0.05):
             opts.thres = threshold
             for pattern_size in range(9, 13, 1):
                 opts.pattern_size = pattern_size
@@ -206,6 +206,7 @@ def tuning():
                             best_val_acc = valid_acc
                             best_model = logreg
                             testset_for_best = testset
+                print("current best:",best_param,"acc:",float(best_val_acc))
     print(best_param)
     confusion = test_model(best_model, testset_for_best, best_param)
     accuracy = np.sum(confusion.diagonal()) / np.sum(confusion)

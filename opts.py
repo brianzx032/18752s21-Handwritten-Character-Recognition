@@ -30,7 +30,7 @@ def get_opts():
                         help='# of words')
 
     # Recognition system (requires tuning)
-    parser.add_argument('--L', type=int, default=3,
+    parser.add_argument('--L', type=int, default=2,
                         help='# of layers in spatial pyramid matching (SPM)')
 
     # logistic regression

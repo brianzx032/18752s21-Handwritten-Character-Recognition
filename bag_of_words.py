@@ -67,5 +67,5 @@ def main(cmd,opts):
 
 if __name__ == "__main__":
     main(["extract"],g_opts)
-    # main(["build"],g_opts)
-    # main(["evaluate"],g_opts)
+    main(["build"],g_opts)
+    main(["evaluate"],g_opts)
