@@ -1,14 +1,10 @@
 '''
 Reference: 16720 Computer Vision S21 HW1
 '''
-import os
-import math
 import multiprocessing
 from os.path import join
-from copy import copy
 
 import numpy as np
-from PIL import Image
 
 import visual_words
 
@@ -93,10 +89,8 @@ def get_image_feature(img):
 
 def get_feat_from_resp(resp):
     global g_opts
-    # print("get_feat_from_resp ({})".format(os.getpid()))
     resp = resp.reshape(g_opts.pattern_size,g_opts.pattern_size,-1)
     wordmap = visual_words.get_visual_words_from_resp(g_opts, resp, g_dictionary)
-    print('.',end='')
     return get_feature_from_wordmap_SPM(g_opts, wordmap)
 
 def build_recognition_system(opts, n_worker=1):
@@ -110,7 +104,7 @@ def build_recognition_system(opts, n_worker=1):
     feat_dir = opts.feat_dir
     SPM_layer_num = opts.L
 
-    trained_feat = np.load(join(feat_dir, "bow_feature.npz"))
+    trained_feat = np.load(join(feat_dir, "hog_corner_feat.npz"))
     train_resps = trained_feat['features']
     train_labels = trained_feat['labels']
     dictionary = np.load(join(feat_dir, 'bow_dictionary.npy'))
@@ -127,88 +121,10 @@ def build_recognition_system(opts, n_worker=1):
 
     g_opts = None
     g_dictionary = None
-    np.savez_compressed(join(out_dir, 'bow_trained_system.npz'),
+    np.savez_compressed(join(feat_dir, 'bow_trained_system.npz'),
                         features=features,
                         labels=train_labels,
                         dictionary=dictionary,
                         SPM_layer_num=SPM_layer_num,
                         )
-    print("")
 
-def distance_to_set(word_hist, histograms):
-    '''
-    Compute distance between a histogram of visual words with all training
-    image histograms.
-    '''
-    # print(word_hist)
-    # target = word_hist
-    # target[np.argmax(target)] = 0
-    # ref = histograms
-    # ref[:,np.argmax(ref,axis=1)] = 0
-    
-    # target = word_hist -np.max(word_hist)
-    # ref = histograms -np.max(histograms,axis=1,keepdims=True)
-
-    # target = word_hist -np.sum(word_hist)/(word_hist.shape[0])
-    # ref = histograms -np.sum(histograms,axis=1,keepdims=True)/(histograms.shape[1])
-
-    # sim = target* ref
-    sim = np.minimum(word_hist, histograms)
-    # sim = np.minimum(-word_hist, -histograms)
-    dist = 1-np.sum(sim, axis=1)
-    # dist = np.linalg.norm(target-ref,axis = 1).sum()
-    return dist
-
-
-def predict(args):
-    global g_opts, g_dictionary, g_features, g_trained_labels
-    img_label, img = args
-    img_feat = get_image_feature(np.array(img))
-    dist = distance_to_set(img_feat, g_features)
-    predict_label = g_trained_labels[np.argmin(dist)]
-    # print("predict ({})".format(os.getpid()))
-    # print('.',end='')
-    return [img_label, predict_label]
-
-
-def evaluate_recognition_system(opts,x,y, n_worker=1):
-    '''
-    Evaluates the recognition system for all test images and returns the
-    confusion matrix.
-    '''
-
-    data_dir = opts.data_dir
-    out_dir = opts.out_dir
-    feat_dir = opts.feat_dir
-
-    trained_system = np.load(join(out_dir, 'bow_trained_system.npz'))
-    dictionary = trained_system['dictionary']
-
-    # using the stored options in the trained system instead of opts.py
-    test_opts = copy(opts)
-    test_opts.K = dictionary.shape[0]
-    test_opts.L = trained_system['SPM_layer_num']
-
-    test_imgs = x.tolist()
-    test_labels = y
-
-    conf = np.zeros((36, 36))
-
-    global g_opts, g_dictionary, g_features, g_trained_labels
-    g_opts = test_opts
-    g_dictionary = dictionary
-    g_features = trained_system['features']
-    g_trained_labels = trained_system['labels']
-
-    zip_args = list(zip(test_labels, test_imgs))
-    with multiprocessing.Pool(n_worker) as p:
-        result = p.map(predict, zip_args)
-    for pred_lb, actual_lb in result:
-        conf[pred_lb, actual_lb] += 1
-
-    g_opts = None
-    g_dictionary = None
-    g_features = None
-    g_trained_labels = []
-
-    return conf

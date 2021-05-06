@@ -3,21 +3,15 @@ from time import time_ns
 
 import matplotlib.pyplot as plt
 import numpy as np
-import scipy.io
-import skimage.color
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
 import torch.optim as optim
-import torchvision
-import torchvision.transforms as transforms
-from PIL import Image
-from skimage.transform import resize
 from torch.utils.data import DataLoader, TensorDataset
-from opts import get_opts
-import string
-import util
+
 import bag_of_words
+import util
+from opts import get_opts
+
 opts = get_opts()
 
 
@@ -170,18 +164,19 @@ def tuning():
     best_val_acc = 0
     best_model = None
     testset_for_best = None
-    for alpha in range(7, 21, 2):
+    for alpha in range(11, 20, 4):
         opts.alpha = alpha
-        for pattern_size in range(7, 13, 2):
+        for pattern_size in range(11, 13, 1):
             opts.pattern_size = pattern_size
-            for threshold in np.arange(0.01, 0.17, 0.03):
+            for threshold in np.arange(0.15, 0.16, 0.01):
                 opts.thres = threshold
-                for n in range(7, 17, 2):
+                for n in range(10, 20, 3):
                     opts.hog_n = n
 
                     bag_of_words.main(["extract"], opts)
 
-                    npz_data = np.load(join(opts.feat_dir, 'bow_feature.npz'))
+                    npz_data = np.load(
+                        join(opts.feat_dir, 'hog_corner_feat.npz'))
                     logreg = LR("hog_corner", opts.pattern_size *
                                 opts.pattern_size*opts.alpha, 36)
                     dataset = TensorDataset(torch.from_numpy(npz_data["features"].astype(np.float32)),
@@ -211,24 +206,15 @@ def tuning():
     return confusion, best_param
 
 
-
 '''hog'''
 confusion, best_param = tuning()
 util.visualize_confusion_matrix(confusion)
 _, _, _, _, opts.alpha, opts.pattern_size, opts.hog_thres, opts.hog_n = best_param
-best_param[2] = 100
+best_param[2] = 200
 bag_of_words.main(["extract"], opts)
-npz_data = np.load(join(opts.feat_dir, 'bow_feature.npz'))
+npz_data = np.load(join(opts.feat_dir, 'hog_corner_feat.npz'))
 logreg = LR("best_hog_corner", opts.pattern_size *
             opts.pattern_size*opts.alpha, 36)
-
-# best_param = [opts.batch_size, opts.lr, opts.epoch,
-#               opts.weight_decay, opts.alpha, opts.pattern_size, opts.hog_thres, opts.hog_n]
-# npz_data = np.load(join(opts.feat_dir, 'zm.npz'))
-# logreg = LR('logistic-regression', 25, 36)
-
-# npz_data = np.load(join(opts.feat_dir, 'hog.npz'))
-# logreg = LR('logistic-regression', 64*64*3, 36)
 
 dataset = TensorDataset(torch.from_numpy(npz_data["features"].astype(np.float32)),
                         torch.from_numpy(npz_data["labels"]))

@@ -20,15 +20,15 @@ def get_opts():
                         help='output folder')
 
     # Visual words (requires tuning)
-    parser.add_argument('--pattern-size', type=int, default=7,
+    parser.add_argument('--pattern-size', type=int, default=11,
                         help='size of pattern')
-    parser.add_argument('--hog-n', type=int, default=7,
+    parser.add_argument('--hog-n', type=int, default=11,
                         help='n for hog')
-    parser.add_argument('--alpha', type=int, default=20,
+    parser.add_argument('--alpha', type=int, default=11,
                         help='# of patterns')
     parser.add_argument('--hog-thres', type=int, default=0.15,
                         help='threshold for hog')
-    parser.add_argument('--K', type=int, default=10,
+    parser.add_argument('--K', type=int, default=20,
                         help='# of words')
 
     # Recognition system (requires tuning)
@@ -36,9 +36,9 @@ def get_opts():
                         help='# of layers in spatial pyramid matching (SPM)')
 
     # logistic regression
-    parser.add_argument('--batch-size', type=int, default=1500,
+    parser.add_argument('--batch-size', type=int, default=2000,
                         help='batch size')
-    parser.add_argument('--epoch', type=int, default=20,
+    parser.add_argument('--epoch', type=int, default=40,
                         help='# of epoches')
     parser.add_argument('--lr', type=float, default=1e-4,
                         help='learning rate')

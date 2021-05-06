@@ -2,17 +2,15 @@
 Reference: 16720 Computer Vision S21 HW1
 '''
 
-import os
 import multiprocessing
-from os.path import join, isfile
+from os.path import join
 
-import numpy as np
-import scipy.ndimage
-import skimage.color
-from PIL import Image
-from sklearn.cluster import KMeans
-import skimage.feature
 import cv2
+import numpy as np
+import skimage.color
+import skimage.feature
+from sklearn.cluster import KMeans
+import scipy.spatial.distance
 
 g_opts = None
 
@@ -30,22 +28,23 @@ def extract_filter_responses(opts, img):
     if len(img.shape) == 3:
         img = skimage.color.rgb2gray(img)
     filter_responses = None
-    result_img = skimage.feature.corner_fast(img, n=opts.hog_n, threshold=opts.hog_thres)
+    result_img = skimage.feature.corner_fast(
+        img, n=opts.hog_n, threshold=opts.hog_thres)
     locs = skimage.feature.corner_peaks(result_img, min_distance=1)
-    H,W = result_img.shape[0],result_img.shape[1]
+    H, W = result_img.shape[0], result_img.shape[1]
     # sort
-    ind = np.lexsort((locs[:,1],locs[:,0]))
+    ind = np.lexsort((locs[:, 1], locs[:, 0]))
     locs = locs[ind]
     m = opts.pattern_size//2
     n = opts.pattern_size - m
     for i in range(opts.alpha):
         try:
-            n = np.min([H - locs[i,0],W - locs[i,1],n])
+            n = np.min([H - locs[i, 0], W - locs[i, 1], n])
             m = opts.pattern_size - n
             patch = img[locs[i][0]-m:locs[i][0]+n, locs[i][1]-m:locs[i][1]+n]
             fd, hog_pattern = skimage.feature.hog(patch, orientations=8,
-                                                pixels_per_cell=(2, 2),
-                                                cells_per_block=(1, 1), visualize=True, multichannel=False)
+                                                  pixels_per_cell=(2, 2),
+                                                  cells_per_block=(1, 1), visualize=True, multichannel=False)
         except:
             hog_pattern = np.zeros((opts.pattern_size, opts.pattern_size))
 
@@ -71,8 +70,6 @@ def compute_response_one_image(img):
     [H, W, fr_num] = sing_img_resp.shape
     sampled_resp = sing_img_resp.reshape((H*W, fr_num))
 
-    # print("compute_response_one_image ({})".format(os.getpid()))
-    print('.', end='')
     return sampled_resp
 
 
@@ -96,7 +93,7 @@ def compute_response(opts, x, y, n_worker=1):
         result = np.array(p.map(compute_response_one_image, train_files))
 
     try:
-        feat_trained = np.load(join(feat_dir, "bow_feature.npz"))
+        feat_trained = np.load(join(feat_dir, "hog_corner_feat.npz"))
         feat = feat_trained["features"]
         label = feat_trained["labels"]
         feat = np.vstack((feat, result))
@@ -104,7 +101,7 @@ def compute_response(opts, x, y, n_worker=1):
     except:
         feat = result
         label = y
-    np.savez_compressed(join(feat_dir, 'bow_feature.npz'),
+    np.savez_compressed(join(feat_dir, 'hog_corner_feat.npz'),
                         features=feat,
                         labels=label,
                         )
@@ -114,7 +111,7 @@ def compute_dictionary():
     global g_opts
     feat_dir = g_opts.feat_dir
     out_dir = g_opts.out_dir
-    feat = np.load(join(feat_dir, "bow_feature.npz"))["features"]
+    feat = np.load(join(feat_dir, "hog_corner_feat.npz"))["features"]
     feat = feat.reshape((feat.shape[0]*feat.shape[1], feat.shape[2]))
     print("Start clustering...")
     kmeans = KMeans(n_clusters=g_opts.K).fit(feat)

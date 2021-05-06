@@ -1,17 +1,15 @@
 from os.path import join
 from time import time_ns
 
-import matplotlib.pyplot as plt
 import numpy as np
 import torch
 import torch.nn as nn
 import torch.optim as optim
 import torchvision
-import torchvision.transforms as transforms
-from PIL import Image
-from torch.utils.data import DataLoader, TensorDataset
+from torch.utils.data import DataLoader
 
 import visual_words
+import util
 from opts import get_opts
 
 
@@ -103,12 +101,6 @@ class Autoencoder(nn.Module):
 
 opts = get_opts()
 visual_words.set_opts(opts)
-transform = transforms.Compose([
-    transforms.Resize((64, 64)),
-    transforms.ToTensor(),
-    transforms.Normalize(mean=[0.485, 0.456, 0.406],
-                         std=[0.229, 0.224, 0.225]),
-])
 
 
 def train_encoder():
@@ -121,7 +113,7 @@ def train_encoder():
     optimizer = optim.Adam(
         model.parameters(), lr=learning_rate, weight_decay=1e-3)
     dataset = torchvision.datasets.ImageFolder(
-        "./data/classified/", transform=transform)
+        "./data/classified/", transform=util.transform(64))
     dataloader = DataLoader(dataset, batch_size=1500, shuffle=True)
     start_time = time_ns()
     for epoch in range(200):
@@ -143,7 +135,8 @@ def train_encoder():
     dataloader = DataLoader(dataset, batch_size=500, shuffle=False)
     for x, _ in dataloader:
         x = x.to(device)
-        feat = model.encoder(x).cpu().numpy()
+        feat = model.encoder(x)
+        feat = feat.cpu().detach().numpy()
         try:
             features = np.vstack((features, feat.reshape(x.shape[0], -1)))
         except:

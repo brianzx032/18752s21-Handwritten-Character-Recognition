@@ -1,51 +1,46 @@
-import string
 from os.path import join
-from time import time
+import multiprocessing
 
-import matplotlib.pyplot as plt
 import numpy as np
-import torch
 import torchvision
-import torchvision.transforms as transforms
-from PIL import Image
-from torch.utils.data import DataLoader, TensorDataset
+from skimage.feature import hog
+from torch.utils.data import DataLoader
 
 import util
 import visual_words
 from opts import get_opts
-from skimage.feature import hog
 
 opts = get_opts()
 visual_words.set_opts(opts)
-transform = transforms.Compose([
-    transforms.Resize((64, 64)),
-    transforms.ToTensor(),
-    transforms.Normalize(mean=[0.485, 0.456, 0.406],
-                         std=[0.229, 0.224, 0.225]),
-])
 
+def get_one_hog(img):
+    img = np.moveaxis(np.array(img), 0, -1).reshape(64, 64, 3)
+
+    hog_feat = None
+    for scale in range (3):
+        fd, hog_image = hog(img, orientations=8, pixels_per_cell=(2**(scale+1), 2**(scale+1)),
+                        cells_per_block=(1, 1), visualize=True, multichannel=True)
+        try:
+            hog_feat = np.dstack((hog_feat,hog_image))
+        except:
+            hog_feat = hog_image
+    return hog_feat.reshape(1,-1).squeeze()
 
 def main():
     dataset = torchvision.datasets.ImageFolder(
-        "./data/classified/", transform=transform)
-    dataloader = DataLoader(dataset, batch_size=1, shuffle=False)
+        "./data/classified/", transform=util.transform(64))
+    dataloader = DataLoader(dataset, batch_size=200, shuffle=False)
     features = None
-    for x, y in dataloader:
-        img = np.moveaxis(x.numpy(), 1, -1).reshape(64, 64, 3)
-        hog_feat = None
-        for scale in range (3):
-            fd, hog_image = hog(img, orientations=8, pixels_per_cell=(2**(scale+1), 2**(scale+1)),
-                            cells_per_block=(1, 1), visualize=True, multichannel=True)
-            try:
-                hog_feat = np.dstack((hog_feat,hog_image))
-            except:
-                hog_feat = hog_image
+    for x, _ in dataloader:
+        with multiprocessing.Pool(util.get_num_CPU()) as p:
+            hog_feat = np.array(p.map(get_one_hog, x.tolist()))
         try:
-            features = np.vstack((features,hog_feat.reshape(1,-1)))
+            features = np.vstack((features,hog_feat))
         except:
-            features = hog_feat.reshape(1,-1)
+            features = hog_feat
+        print("Extracted:",features.shape)
     
-    np.savez_compressed(join(opts.feat_dir, 'hog.npz'),
+    np.savez_compressed(join(opts.feat_dir, 'hog_stack.npz'),
                         features=features,
                         labels=dataset.targets,
                         )

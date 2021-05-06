@@ -6,6 +6,16 @@ import string
 
 import matplotlib.pyplot as plt
 import numpy as np
+import torchvision.transforms as transforms
+
+
+def transform(size):
+    return transforms.Compose([
+        transforms.Resize((size, size)),
+        transforms.ToTensor(),
+        transforms.Normalize(mean=[0.485, 0.456, 0.406],
+                             std=[0.229, 0.224, 0.225]),
+    ])
 
 
 def get_num_CPU():
@@ -39,28 +49,6 @@ def display_hog_images(hog_images):
     plt.show()
 
 
-def display_filter_responses(opts, response_maps):
-    '''
-    Visualizes the filter response maps.
-    '''
-
-    n_scale = len(opts.filter_scales)
-    plt.figure(1)
-
-    for i in range(n_scale * 5):
-        plt.subplot(n_scale, 5, i + 1)
-        resp = response_maps[:, :, i * 3:i * 3 + 3]
-        resp_min = resp.min(axis=(0, 1), keepdims=True)
-        resp_max = resp.max(axis=(0, 1), keepdims=True)
-        resp = (resp - resp_min) / (resp_max - resp_min)
-        plt.imshow(resp)
-        plt.axis("off")
-
-    plt.subplots_adjust(left=0.05, right=0.95, top=0.95,
-                        bottom=0.05, wspace=0.05, hspace=0.05)
-    plt.show()
-
-
 def visualize_wordmap(original_image, wordmap, out_path=None):
     '''
     Visualizes the wordmap corresponding to an image.
@@ -76,9 +64,12 @@ def visualize_wordmap(original_image, wordmap, out_path=None):
     if out_path:
         plt.savefig(out_path, pad_inches=0)
 
+
 def visualize_confusion_matrix(confusion_matrix):
-    plt.imshow(confusion_matrix,interpolation='nearest')
+    plt.imshow(confusion_matrix, interpolation='nearest')
     plt.grid(True)
-    plt.xticks(np.arange(36),''.join([str(_) for _ in range(10)])+string.ascii_uppercase[:26])
-    plt.yticks(np.arange(36),''.join([str(_) for _ in range(10)])+string.ascii_uppercase[:26])
+    plt.xticks(np.arange(36), ''.join(
+        [str(_) for _ in range(10)])+string.ascii_uppercase[:26])
+    plt.yticks(np.arange(36), ''.join(
+        [str(_) for _ in range(10)])+string.ascii_uppercase[:26])
     plt.show()

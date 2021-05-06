@@ -1,34 +1,32 @@
-from cycler import cycler
 import string
+from os.path import join
+
 import mahotas
 import matplotlib.pyplot as plt
 import numpy as np
 import skimage.color
 import torchvision
-from torch.utils.data import DataLoader
+from cycler import cycler
 from skimage.feature import hog
+from torch.utils.data import DataLoader
 
-from bag_of_words import opts, transform
+import util
+from opts import get_opts
 
-dataset = torchvision.datasets.ImageFolder(
-    "./data/classified/", transform=transform)
-loader = DataLoader(dataset, batch_size=1, shuffle=False)
+opts = get_opts()
 
-features = None
-for x, _ in loader:
-    image = np.moveaxis(x.numpy().squeeze(), 0, 2)
-    image = skimage.color.rgb2gray(image)
-    # zernike moments
-    # feat = mahotas.features.zernike_moments(image, 21, degree=8)
+npz_data = np.load(join(opts.feat_dir, 'hog_stack.npz')) 
+# npz_data = np.load(join(opts.feat_dir, 'hog_corner_feat.npz'))
+# npz_data = np.load(join(opts.feat_dir, 'zernike.npz'))
+# npz_data = np.load(join(opts.feat_dir, 'autoencoder.npz'))
+# npz_data = np.load(join(opts.feat_dir, 'bow_trained_system.npz')) 
 
-    # HOG
-    fd, hog_feat = hog(image, orientations=8, pixels_per_cell=(4, 4),
-                    cells_per_block=(1, 1), visualize=True, multichannel=False)
-    feat = hog_feat.reshape(1,-1)
-    try:
-        features = np.vstack((features, feat))
-    except:
-        features = feat
+features,labels = npz_data["features"], npz_data["labels"]
+try:
+    # for hog_corner_feat.npz
+    features = features.reshape((-1, opts.pattern_size**2*opts.alpha))
+except:
+    pass
 
 
 U, Sig, V = np.linalg.svd(features)
@@ -42,12 +40,12 @@ colorcycle = cycler(color=['blue', 'orange', 'green', 'red',
                     'magenta', 'cyan', 'indigo', 'crimson', 'gray', 'pink'])
 plt.gca().set_prop_cycle(colorcycle)
 bias = 20*5
-for c in range(10):
-    xs = coord[0, c*20+bias:c*20+20+bias]
-    ys = coord[1, c*20+bias:c*20+20+bias]
-    zs = coord[2, c*20+bias:c*20+20+bias]
+for c in range(5,15):
+    idx = (labels==c)
+    xs = coord[0, idx]
+    ys = coord[1, idx]
+    zs = coord[2, idx]
     ax.scatter(xs, ys, zs, s=10)
-# plt.legend([str(_) for _ in range(10)]+[string.ascii_uppercase[_] for _ in range(26)])
 plt.legend([str(_) for _ in range(5,10)]+[string.ascii_uppercase[_]
            for _ in range(5)])
 plt.tight_layout()
@@ -55,5 +53,5 @@ ax.set_xlabel('dim 1')
 ax.set_ylabel('dim 2')
 ax.set_zlabel('dim 3')
 # plt.title("zernike_moments")
-plt.title("HOG")
+# plt.title("HOG")
 plt.show()
