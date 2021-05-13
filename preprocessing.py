@@ -19,7 +19,6 @@ import skimage.morphology
 import skimage.restoration
 import skimage.segmentation
 
-
 warnings.simplefilter(action='ignore', category=FutureWarning)
 warnings.simplefilter(action='ignore', category=UserWarning)
 # takes a color image

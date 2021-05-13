@@ -10,8 +10,8 @@ Features:
 
 Bag of visual words:
     bag_of_words.py
-    visual_words.py
-    visual_recog.py
+    helper.py
+    helper.py
 
 Visualization:
     svd_visualize.py

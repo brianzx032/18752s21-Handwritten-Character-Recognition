@@ -19,7 +19,7 @@ def get_opts():
     parser.add_argument('--out-dir', type=str, default='./output',
                         help='output folder')
 
-    # Visual words (requires tuning)
+    # Visual words
     parser.add_argument('--pattern-size', type=int, default=12,
                         help='size of pattern')
     parser.add_argument('--hog-n', type=int, default=10,
@@ -31,7 +31,7 @@ def get_opts():
     parser.add_argument('--K', type=int, default=20,
                         help='# of words')
 
-    # Recognition system (requires tuning)
+    # Recognition system
     parser.add_argument('--L', type=int, default=2,
                         help='# of layers in spatial pyramid matching (SPM)')
 
@@ -40,11 +40,20 @@ def get_opts():
                         help='batch size')
     parser.add_argument('--epoch', type=int, default=40,
                         help='# of epoches')
-    parser.add_argument('--lr', type=float, default=1.2e-3,
+    parser.add_argument('--learning-rate', type=float, default=1.2e-3,
                         help='learning rate')
     parser.add_argument('--weight-decay', type=float, default=1.5e-3,
                         help='weight decay')
 
+    # train and test
+    parser.add_argument('--stack', type=int, default=3,
+                        help='# of stack layers')
+    parser.add_argument('--re-extract', type=int, default=1,
+                        help='re-extract features')
+    parser.add_argument('--feature', type=str, default='hs',
+                        help='feature for classification')
+    parser.add_argument('--classifier', type=str, default='lr',
+                        help='classifier  for classification')
     ##
     opts = parser.parse_args()
     return opts

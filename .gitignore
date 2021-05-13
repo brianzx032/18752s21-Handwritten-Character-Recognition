@@ -129,10 +129,4 @@ dmypy.json
 .pyre/
 
 .vscode/
-feat/
 output/
-*.pth
-*.png
-*.npz
-*.npy
-*.ckpt

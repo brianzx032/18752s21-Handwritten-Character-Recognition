@@ -3,12 +3,25 @@ Reference: 16720 Computer Vision S21 HW1
 '''
 import multiprocessing
 import string
+from os.path import join
 
 import matplotlib.pyplot as plt
 import numpy as np
-import torchvision.transforms as transforms
 import torchvision
+import torchvision.transforms as transforms
 from torch.utils.data import DataLoader
+
+from extract_autoencoder import extract_encoded
+from extract_hog_corner_n_bow import extract
+from extract_hog_stack import extract_hog_stack
+from extract_zernike import extract_zernike
+
+
+def get_num_CPU():
+    '''
+    Counts the number of CPUs available in the machine.
+    '''
+    return multiprocessing.cpu_count()
 
 
 def transform(size):
@@ -19,30 +32,69 @@ def transform(size):
                              std=[0.229, 0.224, 0.225]),
     ])
 
+
 def get_image_data(size):
     dataset = torchvision.datasets.ImageFolder(
         "./data/classified/", transform=transform(size))
-    loader = DataLoader(dataset,len(dataset),shuffle=False)
-    features,labels=None,None
-    for x,y in loader:
-        features,labels=x.reshape(len(dataset),-1),y
-    return features.numpy(),labels.numpy()
-
-def get_num_CPU():
-    '''
-    Counts the number of CPUs available in the machine.
-    '''
-    return multiprocessing.cpu_count()
+    loader = DataLoader(dataset, len(dataset), shuffle=False)
+    features, labels = None, None
+    for x, y in loader:
+        features, labels = x.reshape(len(dataset), -1), y
+    return features.numpy(), labels.numpy()
 
 
-def display_hog_images(hog_images,num):
+def load_features(opts):
+    # hog stacked`
+    if opts.feature == "hs":
+        if opts.re_extract:
+            extract_hog_stack()
+        npz_data = np.load(join(opts.feat_dir, 'hog_stack.npz'))  # LR 92.53%
+
+    # hog corner
+    if opts.feature == "hc":
+        if opts.re_extract:
+            extract(["hog_corner"], opts)
+        npz_data = np.load(join(opts.feat_dir, 'hog_corner.npz'))  # LR 73.92%
+
+    # bag of visual words
+    if opts.feature == "bow":
+        if opts.re_extract:
+            extract(["bow_feat"], opts)
+        npz_data = np.load(
+            join(opts.feat_dir, 'bow_trained_system.npz'))  # LDA 59.11%
+
+    # zernike
+    if opts.feature == "z":
+        if opts.re_extract:
+            extract_zernike()
+        npz_data = np.load(join(opts.feat_dir, 'zernike.npz'))  # QDA 62.48%
+
+    # autoencoder
+    if opts.feature == "ae":
+        if opts.re_extract:
+            extract_encoded()
+        npz_data = np.load(
+            join(opts.feat_dir, 'autoencoder.npz'))  # LDA 63.84%
+
+    try:
+        X, y = npz_data["features"], npz_data["labels"]
+        if opts.feature == "hc":
+            X = X.reshape((-1, opts.pattern_size**2*opts.alpha))
+    except:
+        # resized images
+        if opts.feature == "orig":
+            X, y = get_image_data(64)  # LR 85.64%`
+    return X, y
+
+
+def display_hog_images(hog_images, num, opts):
     '''
     Visualizes the hog.
     '''
 
-    n_scale = 3
+    n_scale = opts.stack
     plt.figure(1)
-    hog_images = hog_images.reshape((-1, 64, 64, 3))
+    hog_images = hog_images.reshape((-1, 64, 64, n_scale))
 
     for i in range(num):
         for j in range(n_scale):
@@ -52,6 +104,52 @@ def display_hog_images(hog_images,num):
             hog_max = hog.max(axis=(0, 1), keepdims=True)
             hog = (hog - hog_min) / (hog_max - hog_min)
             plt.imshow(hog)
+            plt.axis("off")
+
+    plt.subplots_adjust(left=0.05, right=0.95, top=0.95,
+                        bottom=0.05, wspace=0.05, hspace=0.05)
+    plt.show()
+
+
+def display_hog_corners(hog_corners, num, opts):
+    '''
+    Visualizes the hog pattern.
+    '''
+
+    plt.figure(1)
+    hog_corners = hog_corners.reshape((-1, opts.pattern_size, opts.pattern_size,opts.alpha))
+
+    for i in range(num):
+        for j in range(opts.alpha):
+            plt.subplot(num, opts.alpha, i*opts.alpha + j+1)
+            hog = hog_corners[i, :, :, j]
+            hog_min = hog.min(axis=(0, 1), keepdims=True)
+            hog_max = hog.max(axis=(0, 1), keepdims=True)
+            hog = (hog - hog_min) / (hog_max - hog_min)
+            plt.imshow(hog)
+            plt.axis("off")
+
+    plt.subplots_adjust(left=0.05, right=0.95, top=0.95,
+                        bottom=0.05, wspace=0.05, hspace=0.05)
+    plt.show()
+
+
+def display_features(features, s,num, opts):
+    '''
+    Visualizes the feature images.
+    '''
+
+    plt.figure(1)
+    features = features.reshape((-1, s[0], s[1],s[2]))
+
+    for i in range(num):
+        for j in range(s[2]):
+            plt.subplot(num, s[2], i*s[2] + j+1)
+            feat_img = features[i, :, :, j]
+            feat_img_min = feat_img.min(axis=(0, 1), keepdims=True)
+            feat_img_max = feat_img.max(axis=(0, 1), keepdims=True)
+            feat_img = (feat_img - feat_img_min) / (feat_img_max - feat_img_min)
+            plt.imshow(feat_img)
             plt.axis("off")
 
     plt.subplots_adjust(left=0.05, right=0.95, top=0.95,
