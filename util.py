@@ -7,6 +7,8 @@ import string
 import matplotlib.pyplot as plt
 import numpy as np
 import torchvision.transforms as transforms
+import torchvision
+from torch.utils.data import DataLoader
 
 
 def transform(size):
@@ -17,6 +19,14 @@ def transform(size):
                              std=[0.229, 0.224, 0.225]),
     ])
 
+def get_image_data(size):
+    dataset = torchvision.datasets.ImageFolder(
+        "./data/classified/", transform=transform(size))
+    loader = DataLoader(dataset,len(dataset),shuffle=False)
+    features,labels=None,None
+    for x,y in loader:
+        features,labels=x.reshape(len(dataset),-1),y
+    return features.numpy(),labels.numpy()
 
 def get_num_CPU():
     '''
@@ -25,7 +35,7 @@ def get_num_CPU():
     return multiprocessing.cpu_count()
 
 
-def display_hog_images(hog_images):
+def display_hog_images(hog_images,num):
     '''
     Visualizes the hog.
     '''
@@ -34,9 +44,9 @@ def display_hog_images(hog_images):
     plt.figure(1)
     hog_images = hog_images.reshape((-1, 64, 64, 3))
 
-    for i in range(5):
+    for i in range(num):
         for j in range(n_scale):
-            plt.subplot(5, n_scale, i*n_scale + j+1)
+            plt.subplot(num, n_scale, i*n_scale + j+1)
             hog = hog_images[i, :, :, j]
             hog_min = hog.min(axis=(0, 1), keepdims=True)
             hog_max = hog.max(axis=(0, 1), keepdims=True)

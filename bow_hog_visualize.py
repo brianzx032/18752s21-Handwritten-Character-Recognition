@@ -16,7 +16,7 @@ loader = DataLoader(dataset, batch_size=1, shuffle=True)
 n_cpu = util.get_num_CPU()
 
 hog = np.load(join(opts.feat_dir, "hog_stack.npz"))["features"]
-util.display_hog_images(hog)
+util.display_hog_images(hog[np.random.randint(0,hog.shape[0],5)],5)
 
 for x, y in loader:
     img = np.moveaxis(x.numpy(), 1, -1).reshape(32, 32, 3)

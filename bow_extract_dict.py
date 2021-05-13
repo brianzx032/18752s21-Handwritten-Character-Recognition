@@ -51,8 +51,6 @@ def main(cmd, opts):
     if "build" in cmd:
         visual_words.compute_dictionary()
         visual_recog.build_recognition_system(g_opts, n_cpu)
-    if "evaluate" in cmd:
-        evaluate(testloader, n_cpu)
 
 
 if __name__ == "__main__":

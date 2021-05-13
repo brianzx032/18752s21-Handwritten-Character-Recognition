@@ -164,13 +164,13 @@ def tuning():
     best_val_acc = 0
     best_model = None
     testset_for_best = None
-    for alpha in range(11, 20, 4):
+    for alpha in range(15, 22, 3):
         opts.alpha = alpha
         for pattern_size in range(11, 13, 1):
             opts.pattern_size = pattern_size
-            for threshold in np.arange(0.15, 0.16, 0.01):
+            for threshold in np.arange(0.14, 0.18, 0.02):
                 opts.thres = threshold
-                for n in range(10, 20, 3):
+                for n in range(8, 13, 2):
                     opts.hog_n = n
 
                     bag_of_words.main(["extract"], opts)
@@ -187,8 +187,8 @@ def tuning():
                     trainset, validset, testset = torch.utils.data.random_split(
                         dataset, [train_num, valid_num, test_num])
 
-                    for lr in np.arange(1.5e-3, 2e-3, 5e-4):
-                        for w in np.arange(1.5e-3, 2e-3, 5e-4):
+                    for lr in np.arange(1.5e-3, 2.5e-3, 5e-4):
+                        for w in np.arange(1.5e-3, 2.5e-3, 5e-4):
                             valid_acc = train_model(logreg, trainset, validset, [
                                                     opts.batch_size, lr, opts.epoch, w, alpha, pattern_size, threshold, n])
                             if valid_acc > best_val_acc:
@@ -210,7 +210,9 @@ def tuning():
 confusion, best_param = tuning()
 util.visualize_confusion_matrix(confusion)
 _, _, _, _, opts.alpha, opts.pattern_size, opts.hog_thres, opts.hog_n = best_param
-best_param[2] = 200
+best_param = [opts.batch_size, opts.lr, opts.epoch, opts.weight_decay,
+              opts.alpha, opts.pattern_size, opts.hog_thres, opts.hog_n]
+best_param[2] = 1000
 bag_of_words.main(["extract"], opts)
 npz_data = np.load(join(opts.feat_dir, 'hog_corner_feat.npz'))
 logreg = LR("best_hog_corner", opts.pattern_size *

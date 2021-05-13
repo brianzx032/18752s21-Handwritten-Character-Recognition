@@ -20,13 +20,13 @@ def get_opts():
                         help='output folder')
 
     # Visual words (requires tuning)
-    parser.add_argument('--pattern-size', type=int, default=11,
+    parser.add_argument('--pattern-size', type=int, default=12,
                         help='size of pattern')
-    parser.add_argument('--hog-n', type=int, default=11,
+    parser.add_argument('--hog-n', type=int, default=10,
                         help='n for hog')
-    parser.add_argument('--alpha', type=int, default=11,
+    parser.add_argument('--alpha', type=int, default=20,
                         help='# of patterns')
-    parser.add_argument('--hog-thres', type=int, default=0.15,
+    parser.add_argument('--hog-thres', type=int, default=0.18,
                         help='threshold for hog')
     parser.add_argument('--K', type=int, default=20,
                         help='# of words')
@@ -40,9 +40,9 @@ def get_opts():
                         help='batch size')
     parser.add_argument('--epoch', type=int, default=40,
                         help='# of epoches')
-    parser.add_argument('--lr', type=float, default=1e-4,
+    parser.add_argument('--lr', type=float, default=1.2e-3,
                         help='learning rate')
-    parser.add_argument('--weight-decay', type=float, default=1e-5,
+    parser.add_argument('--weight-decay', type=float, default=1.5e-3,
                         help='weight decay')
 
     ##

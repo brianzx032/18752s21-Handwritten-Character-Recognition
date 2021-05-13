@@ -28,11 +28,17 @@ try:
 except:
     pass
 
+''' resized images '''  
+features, labels =util.get_image_data(64)
+
+features -= np.sum(features,axis=0)/features.shape[0]
+
 
 U, Sig, V = np.linalg.svd(features)
 bases = V[:3, :]
 coord = np.linalg.solve(bases@bases.T, bases@features.T)
 
+util.display_hog_images(V[:5, :],5)
 
 fig = plt.figure()
 ax = fig.add_subplot(projection='3d')
