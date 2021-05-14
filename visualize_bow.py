@@ -12,7 +12,7 @@ from opts import get_opts
 opts = get_opts()
 
 dataset = torchvision.datasets.ImageFolder(
-    "./data/classified/", transform=util.transform(32))
+    opts.data_dir, transform=util.transform(32))
 loader = DataLoader(dataset, batch_size=1, shuffle=True)
 
 n_cpu = util.get_num_CPU()

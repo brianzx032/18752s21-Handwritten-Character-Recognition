@@ -114,7 +114,7 @@ def extract_encoded():
     optimizer = optim.Adam(
         model.parameters(), lr=learning_rate, weight_decay=1e-3)
     dataset = torchvision.datasets.ImageFolder(
-        "./data/classified/", transform=util.transform(64))
+        opts.data_dir, transform=util.transform(64))
     dataloader = DataLoader(dataset, batch_size=1500, shuffle=True)
     start_time = time_ns()
     for epoch in range(100):

@@ -79,7 +79,6 @@ def compute_response(opts, x, y, n_worker=1):
     Creates the dictionary of visual words by clustering using k-means.
     '''
 
-    data_dir = opts.data_dir
     feat_dir = opts.feat_dir
     out_dir = opts.out_dir
     K = opts.K
@@ -230,7 +229,6 @@ def build_recognition_system(opts, n_worker=1):
     all training images.
     '''
 
-    data_dir = opts.data_dir
     out_dir = opts.out_dir
     feat_dir = opts.feat_dir
     SPM_layer_num = opts.L

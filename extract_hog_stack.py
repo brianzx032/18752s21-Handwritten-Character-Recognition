@@ -27,7 +27,7 @@ def get_one_hog(img):
 
 def extract_hog_stack():
     dataset = torchvision.datasets.ImageFolder(
-        "./data/classified/", transform=util.transform(64))
+        opts.data_dir, transform=util.transform(64))
     dataloader = DataLoader(dataset, batch_size=500, shuffle=False)
     features = None
     print("Extracting HOG stacked...")

@@ -15,7 +15,7 @@ opts = get_opts()
 
 def extract_zernike():
     dataset = torchvision.datasets.ImageFolder(
-        "./data/classified/", transform=util.transform(64))
+        opts.data_dir, transform=util.transform(64))
     dataloader = DataLoader(dataset, batch_size=1, shuffle=False)
     print("Extracting zernike features...")
     features = None

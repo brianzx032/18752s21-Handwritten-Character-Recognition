@@ -15,45 +15,6 @@ opts = get_opts()
 
 ''' extracted features '''
 X,y = util.load_features(opts)
-# # hog stacked
-# if opts.feature == "hs":
-#     if opts.re_extract:
-#         extract_hog_stack()
-#     npz_data = np.load(join(opts.feat_dir, 'hog_stack.npz'))  # LR 92.53%
-
-# # hog corner
-# if opts.feature == "hc":
-#     if opts.re_extract:
-#         extract(["hog_corner"], opts)
-#     npz_data = np.load(join(opts.feat_dir, 'hog_corner.npz')) # LR 73.92%
-
-# # bag of visual words
-# if opts.feature == "bow":
-#     if opts.re_extract:
-#         extract(["bow_feat"], opts)
-#     npz_data = np.load(join(opts.feat_dir, 'bow_trained_system.npz')) # LDA 59.11%
-
-# # zernike
-# if opts.feature == "z":
-#     if opts.re_extract:
-#         extract_zernike()
-#     npz_data = np.load(join(opts.feat_dir, 'zernike.npz')) # QDA 62.48%
-
-# # autoencoder
-# if opts.feature == "ae":
-#     if opts.re_extract:
-#         extract_encoded()
-#     npz_data = np.load(join(opts.feat_dir, 'autoencoder.npz')) # LDA 63.84%
-
-# try:
-#     X, y = npz_data["features"], npz_data["labels"]
-#     if opts.feature == "hc":
-#         X = X.reshape((-1, opts.pattern_size**2*opts.alpha))
-# except:
-#     # resized images  
-#     if opts.feature == "orig":
-#         X, y =util.get_image_data(64) # LR 85.64%
-
 
 X_train, X_test, y_train, y_test = train_test_split(
     X, y, test_size=0.3, random_state=42)

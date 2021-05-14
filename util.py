@@ -33,9 +33,9 @@ def transform(size):
     ])
 
 
-def get_image_data(size):
+def get_image_data(size,opts):
     dataset = torchvision.datasets.ImageFolder(
-        "./data/classified/", transform=transform(size))
+        opts.data_dir, transform=transform(size))
     loader = DataLoader(dataset, len(dataset), shuffle=False)
     features, labels = None, None
     for x, y in loader:
@@ -83,64 +83,18 @@ def load_features(opts):
     except:
         # resized images
         if opts.feature == "orig":
-            X, y = get_image_data(64)  # LR 85.64%`
+            X, y = get_image_data(64,opts)  # LR 85.64%`
+    X -= np.sum(X, axis=0)/X.shape[0]
     return X, y
 
 
-def display_hog_images(hog_images, num, opts):
-    '''
-    Visualizes the hog.
-    '''
-
-    n_scale = opts.stack
-    plt.figure(1)
-    hog_images = hog_images.reshape((-1, 64, 64, n_scale))
-
-    for i in range(num):
-        for j in range(n_scale):
-            plt.subplot(num, n_scale, i*n_scale + j+1)
-            hog = hog_images[i, :, :, j]
-            hog_min = hog.min(axis=(0, 1), keepdims=True)
-            hog_max = hog.max(axis=(0, 1), keepdims=True)
-            hog = (hog - hog_min) / (hog_max - hog_min)
-            plt.imshow(hog)
-            plt.axis("off")
-
-    plt.subplots_adjust(left=0.05, right=0.95, top=0.95,
-                        bottom=0.05, wspace=0.05, hspace=0.05)
-    plt.show()
-
-
-def display_hog_corners(hog_corners, num, opts):
-    '''
-    Visualizes the hog pattern.
-    '''
-
-    plt.figure(1)
-    hog_corners = hog_corners.reshape((-1, opts.pattern_size, opts.pattern_size,opts.alpha))
-
-    for i in range(num):
-        for j in range(opts.alpha):
-            plt.subplot(num, opts.alpha, i*opts.alpha + j+1)
-            hog = hog_corners[i, :, :, j]
-            hog_min = hog.min(axis=(0, 1), keepdims=True)
-            hog_max = hog.max(axis=(0, 1), keepdims=True)
-            hog = (hog - hog_min) / (hog_max - hog_min)
-            plt.imshow(hog)
-            plt.axis("off")
-
-    plt.subplots_adjust(left=0.05, right=0.95, top=0.95,
-                        bottom=0.05, wspace=0.05, hspace=0.05)
-    plt.show()
-
-
-def display_features(features, s,num, opts):
+def display_features(features, s, num, opts):
     '''
     Visualizes the feature images.
     '''
 
     plt.figure(1)
-    features = features.reshape((-1, s[0], s[1],s[2]))
+    features = features.reshape((-1, s[0], s[1], s[2]))
 
     for i in range(num):
         for j in range(s[2]):
@@ -148,7 +102,8 @@ def display_features(features, s,num, opts):
             feat_img = features[i, :, :, j]
             feat_img_min = feat_img.min(axis=(0, 1), keepdims=True)
             feat_img_max = feat_img.max(axis=(0, 1), keepdims=True)
-            feat_img = (feat_img - feat_img_min) / (feat_img_max - feat_img_min)
+            feat_img = (feat_img - feat_img_min) / \
+                (feat_img_max - feat_img_min)
             plt.imshow(feat_img)
             plt.axis("off")
 

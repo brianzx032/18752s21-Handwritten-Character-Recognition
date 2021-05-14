@@ -31,7 +31,7 @@ def extract(cmd, opts):
     g_opts = opts
     helper.set_opts(opts)
     dataset = torchvision.datasets.ImageFolder(
-        "./data/classified/", transform=util.transform(32))
+        g_opts.data_dir, transform=util.transform(32))
     test_num = len(dataset)//5
     train_num = len(dataset)-test_num
     trainset, testset = random_split(

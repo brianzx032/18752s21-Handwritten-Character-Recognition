@@ -12,7 +12,7 @@ def get_opts():
         description='Bag of words')
 
     # Paths
-    parser.add_argument('--data-dir', type=str, default='./data',
+    parser.add_argument('--data-dir', type=str, default='./data/classified',
                         help='data folder')
     parser.add_argument('--feat-dir', type=str, default='./feat',
                         help='feature folder')
@@ -56,4 +56,6 @@ def get_opts():
                         help='classifier  for classification')
     ##
     opts = parser.parse_args()
+    if opts.data_dir=="s":
+        opts.data_dir = "./data/sample"
     return opts
