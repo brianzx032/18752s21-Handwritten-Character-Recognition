@@ -9,7 +9,7 @@ import os
 
 def get_opts():
     parser = argparse.ArgumentParser(
-        description='Bag of words')
+        description='Handwritten Character Recognition')
 
     # Paths
     parser.add_argument('--data-dir', type=str, default='./data/classified',

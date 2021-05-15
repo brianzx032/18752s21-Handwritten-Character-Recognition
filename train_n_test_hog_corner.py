@@ -179,8 +179,10 @@ def tuning():
                         join(opts.feat_dir, 'hog_corner.npz'))
                     logreg = LR("hog_corner", opts.pattern_size *
                                 opts.pattern_size*opts.alpha, 36)
-                    dataset = TensorDataset(torch.from_numpy(npz_data["features"].astype(np.float32)),
-                                            torch.from_numpy(npz_data["labels"]))
+                    dataset = TensorDataset(
+                        torch.from_numpy(
+                            npz_data["features"].astype(np.float32)),
+                        torch.from_numpy(npz_data["labels"]))
                     valid_num = len(dataset)//3
                     test_num = valid_num
                     train_num = len(dataset)-valid_num-test_num
@@ -189,8 +191,9 @@ def tuning():
 
                     for lr in np.arange(1.5e-3, 2.5e-3, 5e-4):
                         for w in np.arange(1.5e-3, 2.5e-3, 5e-4):
-                            valid_acc = train_model(logreg, trainset, validset, [
-                                                    opts.batch_size, lr, opts.epoch, w, alpha, pattern_size, threshold, n])
+                            valid_acc = train_model(logreg, trainset, validset,
+                                                    [opts.batch_size, lr, opts.epoch,
+                                                     w, alpha, pattern_size, threshold, n])
                             if valid_acc > best_val_acc:
                                 best_param = [opts.batch_size, lr, opts.epoch,
                                               w, alpha, pattern_size, threshold, n]

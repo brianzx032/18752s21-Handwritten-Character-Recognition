@@ -1,6 +1,3 @@
-'''
-Reference: 16720 Computer Vision S21 HW1
-'''
 import multiprocessing
 import string
 from os.path import join
@@ -33,7 +30,7 @@ def transform(size):
     ])
 
 
-def get_image_data(size,opts):
+def get_image_data(size, opts):
     dataset = torchvision.datasets.ImageFolder(
         opts.data_dir, transform=transform(size))
     loader = DataLoader(dataset, len(dataset), shuffle=False)
@@ -83,7 +80,7 @@ def load_features(opts):
     except:
         # resized images
         if opts.feature == "orig":
-            X, y = get_image_data(64,opts)  # LR 85.64%`
+            X, y = get_image_data(64, opts)  # LR 85.64%`
     X -= np.sum(X, axis=0)/X.shape[0]
     return X, y
 
@@ -115,6 +112,7 @@ def display_features(features, s, num, opts):
 def visualize_wordmap(original_image, wordmap, out_path=None):
     '''
     Visualizes the wordmap corresponding to an image.
+    Reference: 16720 Computer Vision S21 HW1
     '''
     fig = plt.figure(2, figsize=(12.8, 4.8))
     ax = fig.add_subplot(1, 2, 1)
@@ -129,6 +127,9 @@ def visualize_wordmap(original_image, wordmap, out_path=None):
 
 
 def visualize_confusion_matrix(confusion_matrix):
+    '''
+    Reference: 16720 Computer Vision S21 HW1
+    '''
     plt.imshow(confusion_matrix, interpolation='nearest')
     plt.grid(True)
     plt.xticks(np.arange(36), ''.join(
